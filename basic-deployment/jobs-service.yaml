@@ -1,0 +1,42 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: jobs-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jobs-service
+  template:
+    metadata:
+      labels:
+        app: jobs-service
+    spec:
+      containers:
+      - name: jobs-service
+        image: quay.io/kiegroup/kogito-jobs-service-postgresql:1.44
+        ports:
+        - containerPort: 8080
+        env:
+        - name: QUARKUS_DATASOURCE_JDBC_URL
+          value: "jdbc:postgresql://postgres-db-service:5432/sonataflow?currentSchema=jobs-service"
+        - name: JOBS_SERVICE_PERSISTENCE
+          value: postgresql
+        - name: QUARKUS_DATASOURCE_DB_KIND
+          value: postgresql
+        - name: QUARKUS_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_USER
+        - name: QUARKUS_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_PASSWORD
+        - name: KOGITO_JOBS_SERVICE_KNATIVE_EVENTS
+          value: "false"
+        - name: SCRIPT_DEBUG
+          value: "false"
+        - name: QUARKUS_LOG_LEVEL
+          value: INFO

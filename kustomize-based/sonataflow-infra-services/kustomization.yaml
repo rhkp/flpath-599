@@ -1,0 +1,6 @@
+resources:
+- sonataflow-infra-ns.yaml
+- postgres-secret.yaml
+- postgres.yaml
+- data-index.yaml
+- jobs-service.yaml

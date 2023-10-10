@@ -1,0 +1,7 @@
+resources:
+- ../sonataflow-infra-services
+- ../sonataflow-build
+- ../sonataflow-platform
+- ../service-discovery
+- ../sonataflow-greeting
+- ../sonataflow-event-timeout

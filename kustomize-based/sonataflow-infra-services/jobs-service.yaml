@@ -1,0 +1,65 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: jobs-service
+  namespace: sonataflow-infra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jobs-service
+  template:
+    metadata:
+      labels:
+        app: jobs-service
+    spec:
+      containers:
+      - name: jobs-service
+        image: quay.io/kiegroup/kogito-jobs-service-postgresql:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: QUARKUS_DATASOURCE_JDBC_URL
+          value: "jdbc:postgresql://postgres-db-service:5432/sonataflow?currentSchema=jobs-service"
+        - name: JOBS_SERVICE_PERSISTENCE
+          value: postgres-db-service
+        - name: QUARKUS_DATASOURCE_REACTIVE_URL
+          value: "postgresql://postgres-db-service:5432/sonataflow?search_path=jobs-service"
+        - name: QUARKUS_DATASOURCE_DB_KIND
+          value: postgresql
+        - name: QUARKUS_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_USER
+        - name: QUARKUS_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_PASSWORD
+        - name: KOGITO_JOBS_SERVICE_KNATIVE_EVENTS
+          value: "false"
+        - name: SCRIPT_DEBUG
+          value: "false"
+        - name: QUARKUS_LOG_LEVEL
+          value: INFO
+      initContainers:
+        - name: init-postgres
+          image: busybox:1.36
+          imagePullPolicy: IfNotPresent
+          command: ['sh', '-c', 'until nc -vz postgres-db-service.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local 5432; do echo "Waiting for postgres server"; sleep 3; done;']
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: jobs-service-service
+  namespace: sonataflow-infra
+  labels: 
+      app: jobs-service
+spec:
+  selector:
+    app: jobs-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080          

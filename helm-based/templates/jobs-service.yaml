@@ -1,0 +1,88 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: jobs-service
+  namespace: sonataflow-infra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jobs-service
+  template:
+    metadata:
+      labels:
+        app: jobs-service
+    spec:
+      containers:
+      - name: jobs-service
+        image: quay.io/kiegroup/kogito-jobs-service-postgresql:1.44
+# https://access.redhat.com/solutions/7002730
+{{if eq .Values.clusterPlatform "openshift"}}
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          seccompProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+            - ALL
+{{end}}        
+
+        ports:
+        - containerPort: 8080
+        env:
+        - name: QUARKUS_DATASOURCE_JDBC_URL
+          value: "jdbc:postgresql://postgres-db-service:{{.Values.postgres.port}}/{{.Values.postgres.dbname}}?currentSchema=jobs-service"
+        - name: QUARKUS_DATASOURCE_REACTIVE_URL
+          value: postgresql://postgres-db-service:{{.Values.postgres.port}}/{{.Values.postgres.dbname}}?search_path=jobs-service          
+        - name: JOBS_SERVICE_PERSISTENCE
+          value: postgresql
+        - name: QUARKUS_DATASOURCE_DB_KIND
+          value: postgresql
+        - name: QUARKUS_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_USER
+        - name: QUARKUS_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: POSTGRES_PASSWORD
+        - name: KOGITO_JOBS_SERVICE_KNATIVE_EVENTS
+          value: "false"
+        - name: SCRIPT_DEBUG
+          value: "false"
+        - name: QUARKUS_LOG_LEVEL
+          value: INFO
+      initContainers:
+        - name: init-postgres
+          image: busybox:1.36
+# https://access.redhat.com/solutions/7002730
+{{if eq .Values.clusterPlatform "openshift"}}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+              - ALL
+{{end}}        
+          imagePullPolicy: IfNotPresent
+          command: ['sh', '-c', 'until nc -vz postgres-db-service.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local {{.Values.postgres.port}}; do echo "Waiting for postgres server"; sleep 3; done;']
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: jobs-service-service
+  namespace: sonataflow-infra
+  labels: 
+      app: jobs-service
+spec:
+  selector:
+    app: jobs-service
+  ports:
+    - protocol: TCP
+      port: {{.Values.jobsservice.port}}
+      targetPort: {{.Values.jobsservice.port}}

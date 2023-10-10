@@ -1,0 +1,7 @@
+resources:
+- ../sonataflow-infra-services
+- ../sonataflow-build
+- ../sonataflow-platform
+- ../service-discovery-openshift
+- ../sonataflow-greeting-openshift
+- ../sonataflow-event-timeout-openshift

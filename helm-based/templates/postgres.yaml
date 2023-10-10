@@ -1,0 +1,82 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: postgres-pvc
+  namespace: sonataflow-infra
+  labels: 
+      app: postgres-db
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{.Values.postgres.storage}}
+---
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: postgres-db
+  namespace: sonataflow-infra
+  labels: 
+    app: postgres-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-db
+  template:
+    metadata:
+      labels:
+        app: postgres-db
+    spec:
+      containers:
+        - name: postgres-db
+          image: 'quay.io/ecosystem-appeng/rhdh-postgres'
+          imagePullPolicy: 'Always'
+# https://access.redhat.com/solutions/7002730
+{{if eq .Values.clusterPlatform "openshift"}}
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+              - ALL
+{{end}}
+          ports:
+            - containerPort: {{.Values.postgres.port}}
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: dbfiles
+          envFrom:
+            - secretRef:
+                name: postgres-secrets
+          env:
+            - name: PGDATA
+              value: {{.Values.postgres.dataDir}}
+            - name: POSTGRES_DB
+              value: {{.Values.postgres.dbname}}
+            - name: POSTGRES_HOST_AUTH_METHOD
+              value: password
+            - name: POSTGRES_INITDB_ARGS
+              value: "-U postgres"
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: postgres-db-service
+  namespace: sonataflow-infra
+  labels: 
+      app: postgres-db
+spec:
+  selector:
+    app: postgres-db
+  ports:
+    - protocol: TCP
+      port: {{.Values.postgres.port}}
+      targetPort: {{.Values.postgres.port}}
