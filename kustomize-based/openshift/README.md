@@ -1,4 +1,4 @@
-# [flpath-599 - Create a deployment for a development with multiple workflows](https://issues.redhat.com/browse/FLPATH-599)
+# Openshift
 
 ## Prerequisites
 * An Openshift or Openshift Local cluster

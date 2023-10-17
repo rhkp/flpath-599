@@ -1,7 +1,6 @@
-# flpath-599
+# Sample workflow deployments on Openshift and Minikube
 
-* You can deploy PostgreSQL, Data Index and Jobs Services with one of the following approaches.
+* You can deploy Sonataflow operator, workflow infrastructure services along with sample workflows by using one of the following approaches, on an existing Openshift or Minikube cluster.
 
-* [Kustomize based deployment approach](kustomize-based/README.md)
-* [Helm based approach](helm-based/README.md)
-* [Regular deployment approach](basic-deployment/README.md)
+* [Kustomize based deployment](kustomize-based/README.md)
+* [Helm based deployment](helm-based/README.md)
