@@ -12,6 +12,20 @@ The following namespaces are used by the deployment
 |User's Workflow Namespace| User specified namespace where workflows will be deployed.|
 
 ## Deploy Sonataflow Operator, PostgreSQL, Data Index, Jobs Service & Sample Work Flows
+* Be sure to create file called postgres-secret.yaml with following content in sonataflow-infra-services directory.
+```yaml
+kind: Secret
+apiVersion: v1
+metadata:
+  name: postgres-secrets
+  namespace: sonataflow-infra
+  labels: 
+    app: kogito
+data:
+  POSTGRES_USER: <Your postgres user>
+  POSTGRES_PASSWORD: <Your postgres password>
+type: Opaque
+```
 * Deploy Sonataflow Operator, postgres database, data index, Jobs services and Sample work flows.
 * The data index and jobs service will wait for postgres db to come up before coming alive, so as to avoid pod restarts.
 ```shell
